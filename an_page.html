@@ -1,0 +1,122 @@
+<!doctype html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<title>angular-分页</title>
+	<link rel="stylesheet" href="http://cdn.bootcss.com/bootstrap/3.0.2/css/bootstrap.min.css">
+	<script src="http://cdn.bootcss.com/jquery/2.0.3/jquery.min.js"></script>
+	<script src="http://cdn.bootcss.com/angular.js/1.2.0/angular.min.js"></script>
+</head>
+<body ng-app="pageApp">
+<div class="container">
+<div class="col-md-6 col-md-offset-3" ng-controller="pageController">
+
+        <!--指令调用代码-->
+        <xl-page size="30" method="load"></xl-page>
+
+</div>
+</div>
+
+<script>
+var pageApp = angular.module("pageApp",[]);//开始
+//指令部分
+pageApp.directive('xlPage', [function () {
+    return {
+        restrict : "E",
+        replace: true,
+        templateUrl: 'xl-page.html',
+        link: function (scope, ele, attrs) {
+            scope.currentPage = 1;//当前页数
+            scope.count = 0;//总条数
+            scope.pageSize = attrs.size;//分页大小
+            scope.totalPage = 1;//总页数
+            scope.pages = [];//分页数组
+            if (!scope[attrs.method]) {
+                throw new Error('load method is undefined');
+            }
+            scope.next = function () {
+                if (scope.currentPage < scope.totalPage) {
+                     scope.currentPage++;
+                     scope.getData();                 
+                }             
+            };             
+            scope.prev = function () {                 
+                if (scope.currentPage > 1) {
+                    scope.currentPage--;
+                    scope.getData();
+                }
+            };
+            //调用
+            scope.getData = function (page) {
+                page && (scope.currentPage = page);
+                scope[attrs.method](scope.currentPage, scope.pageSize, function (data) {
+                    scope.totalPage = Math.ceil(data.count / scope.pageSize);
+                    if (scope.currentPage > 1 && scope.currentPage < scope.totalPage) {                         
+                         scope.pages = [
+                             scope.currentPage - 1,
+                             scope.currentPage,
+                             scope.currentPage + 1
+                         ];                     
+                    } else if (scope.currentPage == 1 && scope.totalPage > 1) {
+                        scope.pages = [
+                            scope.currentPage,
+                            scope.currentPage + 1
+                        ];
+                    } else if (scope.currentPage == scope.totalPage && scope.totalPage > 1) {
+                        scope.pages = [
+                            scope.currentPage - 1,
+                            scope.currentPage
+                        ];
+                    }
+                    scope.list = data.list;
+                });
+            };
+            scope.getData();
+        }
+    }
+}]);
+ 
+//控制器部分
+pageApp.controller('pageController', ['$rootScope', '$scope', '$http', function ($rootScope, $scope, $http) {
+    $scope.list = '{
+ "count": "2",
+ "list": [
+ {
+ "user_id": "12",
+ "email": "admin@ddhigh.com",
+ "nickname": "拖鞋",
+ "avatar": "http://q.qlogo.cn/qqapp/101191761/0D040ED029959BB79FD1A0927FD48989/100",
+ "sex": "1",
+ "status": "1",
+ "phone": "",
+ "description": null,
+ "created_at": "1427303955",
+ "score": "0"
+ },
+ {
+ "user_id": "4",
+ "email": "xxx@qq.com",
+ "nickname": "111",
+ "avatar": "",
+ "sex": "1",
+ "status": "1",
+ "phone": "",
+ "description": null,
+ "created_at": "1426777188",
+ "score": "0"
+ }
+ ]
+}';
+    $scope.keyword = '';
+    $scope.load = function (page, size, callback) {
+        $http.get($rootScope.api + '/course/list?keyword=' + $scope.keyword + '&page=' + page + '&size=' + size).success(function (data) {
+            callback && callback(data);
+        });
+    };
+
+
+</script>
+
+
+</body>
+</html>
